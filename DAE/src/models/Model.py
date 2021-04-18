@@ -15,10 +15,10 @@ import numpy as np
 import importlib
 importlib.reload(Processing)
 
-X = load_mnist(as_img = False)
+X = load_mnist(download = True,as_img = False)
 
 X_norm = normalize(X)
-X_noise = add_white_noise(normalize(X))
+X_noise = add_white_noise(X_norm)
 X_train, X_test, Y_train, Y_test = train_test_split(X_norm,X_noise,test_size = 0.2)
 
 
@@ -40,7 +40,7 @@ def build_decoder(encoding_dim):
 
     decoded = Dense(64, activation='relu')(input_encoded)
     decoded = Dense(128, activation='relu')(decoded)
-    decoded = Dense(28*28,activation='linear')(decoded)
+    decoded = Dense(28*28,activation='relu')(decoded)
 
     decoder = Model(input_img,decoded)
     return decoder
@@ -59,7 +59,7 @@ early_stopping = EarlyStopping(monitor="val_loss",min_delta=0.0001,patience=5,re
 autoencoder.compile(optimizer = 'adam',loss = 'mse',metrics=['mae'])
 
 
-autoencoder.fit(X,X_noise,epochs=30,batch_size=64,shuffle=True,validation_data=(X_test,Y_test),callbacks=early_stopping)
+autoencoder.fit(X_noise,X,epochs=30,batch_size=64,shuffle=True,validation_data=(X_test,Y_test))#callbacks=[early_stopping])
 
 plt.imshow(np.reshape(autoencoder.predict(X_test[0][np.newaxis,:]),(28,28)))
 
@@ -67,3 +67,5 @@ plt.imshow(np.reshape(autoencoder.predict(X_test[0][np.newaxis,:]),(28,28)))
 plt.imshow(np.reshape(X_test[0],(28,28)))
 
 X_test[0][np.newaxis,:].shape
+import tensorflow
+tensorflow.__version__
