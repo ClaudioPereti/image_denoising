@@ -19,6 +19,10 @@ def load_mnist(download = False,as_img = True):
         ((X_train,_),(X_test,_))= mnist.load_data()
         X = np.vstack([X_train,X_test])
 
+        if not as_img:
+            #image are 28x28
+            X = np.reshape(X,(70000,28*28))
+
         return X
 
     else:
