@@ -11,7 +11,7 @@ def normalize(X):
     X = X/255.0
     return X
 
-def add_white_noise(X):
+def add_white_noise(X,factor = 1):
     """ return a numpy array with white noise added (normal distribution mean 0 var 1)"""
     #distinguishes dataset of 28*28 image and 754 array
 
@@ -21,5 +21,5 @@ def add_white_noise(X):
     if len(X.shape) == 2:
         noise = np.random.randn(X.shape[0],X.shape[1])
 
-    X_noise = X+noise
+    X_noise = X+factor*noise
     return X_noise
