@@ -13,13 +13,13 @@ import numpy as np
 
 #%%
 import importlib
-importlib.reload(Processing)
+importlib.reload(Loader)
 
 X = load_mnist(download = True,as_img = False)
-
+X.shape
 X_norm = normalize(X)
 X_noise = add_white_noise(X_norm)
-X_train, X_test, Y_train, Y_test = train_test_split(X_norm,X_noise,test_size = 0.2)
+X_train, X_test, Y_train, Y_test = train_test_split(X_noise,X_norm,test_size = 0.2)
 
 
 def build_encoder(encoding_dim):
@@ -59,13 +59,43 @@ early_stopping = EarlyStopping(monitor="val_loss",min_delta=0.0001,patience=5,re
 autoencoder.compile(optimizer = 'adam',loss = 'mse',metrics=['mae'])
 
 
-autoencoder.fit(X_noise,X,epochs=30,batch_size=64,shuffle=True,validation_data=(X_test,Y_test))#callbacks=[early_stopping])
+autoencoder.fit(X_train,Y_train,epochs=30,batch_size=64,shuffle=True,validation_data=(X_test,Y_test),callbacks=[early_stopping])
 
 plt.imshow(np.reshape(autoencoder.predict(X_test[0][np.newaxis,:]),(28,28)))
 
 
-plt.imshow(np.reshape(X_test[0],(28,28)))
+plt.imshow(np.reshape(Y_test[0],(28,28)))
 
-X_test[0][np.newaxis,:].shape
-import tensorflow
-tensorflow.__version__
+#%%
+X = load_mnist(download = True,as_img = True)
+X.shape
+X_norm = normalize(X)
+X_noise = add_white_noise(X_norm)
+X_train, X_test, Y_train, Y_test = train_test_split(X_noise,X_norm,test_size = 0.2)
+
+from tensorflow.keras.layers import Conv2D,Conv2DTranspose, MaxPooling2D,UpSampling2D
+#%%
+input_img = Input(shape=(28,28,1))
+
+
+encoder = Conv2D(32,(3,3),activation='relu',padding='same')(input_img)
+encoder = MaxPooling2D((2,2),padding = 'same')(encoder)
+encoder = Conv2D(32,(3,3),activation='relu',padding='same')(encoder)
+encoder = MaxPooling2D((2,2),padding = 'same')(encoder)
+
+decoder = Conv2D(32,(3,3),activation='relu',padding='same')(encoder)
+decoder = UpSampling2D((2,2))(decoder)
+decoder = Conv2D(32,(3,3),activation='relu',padding='same')(decoder)
+decoder = UpSampling2D((2,2))(decoder)
+decoder = Conv2D(1,(3,3),activation='sigmoid',padding='same')(decoder)
+
+conv_autoencoder = Model(input_img,decoder)
+
+conv_autoencoder.compile(optimizer='adam',loss = 'binary_crossentropy')
+
+conv_autoencoder.fit(X_train,Y_train,batch_size = 256,shuffle=True,epochs=10,validation_data=(X_test,Y_test),callbacks=[early_stopping])
+
+plt.imshow(np.reshape(conv_autoencoder.predict(X_test[3][np.newaxis,:]),(28,28)))
+
+
+plt.imshow(np.reshape(Y_test[3],(28,28)))
