@@ -10,13 +10,11 @@ from tensorflow.keras.models import Model
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import numpy as np
+from tensorflow.keras.layers import Conv2D,Conv2DTranspose, MaxPooling2D
 
-#%%
-import importlib
-importlib.reload(Loader)
 
 X = load_mnist(download = True,as_img = False)
-X.shape
+
 X_norm = normalize(X)
 X_noise = add_white_noise(X_norm)
 X_train, X_test, Y_train, Y_test = train_test_split(X_noise,X_norm,test_size = 0.2)
@@ -73,26 +71,50 @@ X_norm = normalize(X)
 X_noise = add_white_noise(X_norm)
 X_train, X_test, Y_train, Y_test = train_test_split(X_noise,X_norm,test_size = 0.2)
 
-from tensorflow.keras.layers import Conv2D,Conv2DTranspose, MaxPooling2D,UpSampling2D
-#%%
-input_img = Input(shape=(28,28,1))
+from tensorflow.keras.layers import Conv2D,Conv2DTranspose, MaxPooling2D
+
+def build_conv_encoder():
+    input_img = Input(shape=(28,28,1))
 
 
-encoder = Conv2D(32,(3,3),activation='relu',padding='same')(input_img)
-encoder = MaxPooling2D((2,2),padding = 'same')(encoder)
-encoder = Conv2D(32,(3,3),activation='relu',padding='same')(encoder)
-encoder = MaxPooling2D((2,2),padding = 'same')(encoder)
+    encoded = Conv2D(32,(3,3),activation='relu',padding='same')(input_img)
+    encoded = MaxPooling2D((2,2),padding = 'same')(encoded)
+    encoded = Conv2D(32,(3,3),activation='relu',padding='same')(encoded)
+    encoded = MaxPooling2D((2,2),padding = 'same')(encoded)
 
-decoder = Conv2D(32,(3,3),activation='relu',padding='same')(encoder)
-decoder = UpSampling2D((2,2))(decoder)
-decoder = Conv2D(32,(3,3),activation='relu',padding='same')(decoder)
-decoder = UpSampling2D((2,2))(decoder)
-decoder = Conv2D(1,(3,3),activation='sigmoid',padding='same')(decoder)
+    encoder = Model(input_img,encoded)
+    return encoder
 
-conv_autoencoder = Model(input_img,decoder)
+def bottleneck(input_encoded):
 
+    bottle_neck = Conv2D(34,(3,3),activation='relu',padding='same')(input_encoded)
+
+    return bottle_neck
+
+def build_conv_decoder():
+
+    input_img = Input(shape=(28,28,1))
+    encoder = build_conv_encoder()
+    input_encoded = encoder(input_img)
+    bottle_neck = bottleneck(input_encoded)
+
+    decoded = Conv2D(32,(3,3),activation='relu',padding='same')(bottle_neck)
+    decoded = Conv2DTranspose(32,(3,3),(2,2),padding='same')(decoded)
+    decoded = Conv2D(32,(3,3),activation='relu',padding='same')(decoded)
+    decoded = Conv2DTranspose(1,(3,3),(2,2),padding='same')(decoded)
+    decoded = Conv2D(1,(3,3),activation='sigmoid',padding='same')(decoded)
+
+    decoder = Model(input_img,decoded)
+    return decoder
+
+def build_conv_autoencoder():
+    conv_autoencoder = build_conv_decoder()
+    return conv_autoencoder
+
+
+conv_autoencoder = build_conv_autoencoder()
 conv_autoencoder.compile(optimizer='adam',loss = 'binary_crossentropy')
-
+conv_autoencoder.summary()
 conv_autoencoder.fit(X_train,Y_train,batch_size = 256,shuffle=True,epochs=10,validation_data=(X_test,Y_test),callbacks=[early_stopping])
 
 plt.imshow(np.reshape(conv_autoencoder.predict(X_test[3][np.newaxis,:]),(28,28)))
