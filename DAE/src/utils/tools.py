@@ -4,19 +4,19 @@ import numpy as np
 
 def peak_signal_noise_rateo(y_true,y_pred):
     """
-    return a tensor containig the peak_signal_noise_rateo (PSNR)
+    Compute the peak_signal_noise_rateo (PSNR)
 
     The peak_signal_noise_rateo is a metric to evaluate the performance of denoising, or more common of compressing, an immage.
     The higher the PSNR value, the more similar the image is to the original.
     The PSNR value is misured in decibel (db)
     Good values range from 20 to 35
 
-    Parameters:
-             y_true: pixels of the original image, before the noise was added
-             y_pred: pixels of the denoised image
+    Args:
+             y_true (tensor): pixels of the original image, before the noise was added
+             y_pred (tensor): pixels of the denoised image
 
     Returns:
-            tf.Tensor containig the float32 PSNR value
+            peak_signal_noise_rateo (tensor): tf.Tensor containig the float32 PSNR value
 
     """
 
@@ -33,10 +33,11 @@ def peak_signal_noise_rateo(y_true,y_pred):
 
 
 def plot_img(n_fig ,autoencoder,X_test,Y_test):
-    """
-    return 3 series of n_fig image; in order: the ground truth, the corrupted one with the noise and the one reconstructed with the autoencoder
+    """plot 3 series of n_fig image
 
-    Parameters:
+    plot 3 series of image in order: the ground truth, the corrupted one with the noise and the one reconstructed with the autoencoder
+
+    Args:
             n_fig(int): number of figure to plot
             autoencoder(Keras model): autoencoder that denoise the image
             X_test(numpy array): numpy array with the noised image

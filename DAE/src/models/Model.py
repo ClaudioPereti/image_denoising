@@ -15,6 +15,7 @@ from tensorflow.keras import regularizers
 
 
 def build_encoder(encoding_dim,sparse):
+    """build and return the encoder with a specified encoding dimension"""
 
     input_img = Input(shape=(28*28,))
     encoded = Dense(128, activation='relu')(input_img)
@@ -28,6 +29,7 @@ def build_encoder(encoding_dim,sparse):
     return encoder
 
 def build_decoder(encoding_dim,sparse):
+    """"build and return the decoder linked with the encoder"""
 
     input_img = Input(shape=(28*28,))
     encoder = build_encoder(encoding_dim,sparse)
@@ -41,11 +43,21 @@ def build_decoder(encoding_dim,sparse):
     return decoder
 
 def build_autoencoder(encoding_dim=32,sparse = False):
+    """build a deep autoencoder
+
+    Args:
+        encoding_dim (int): The dimension of the encoder output (default is 32)
+        sparse (bool): a flag used to turn the autoencoder in an sparse autoencoder (default is False)
+
+    Returns:
+        decoder (keras functional model): the autoencoder built linking decoder and encoder
+    """
     decoder = build_decoder(encoding_dim,sparse)
     return decoder
 
 
 def build_conv_encoder():
+    """build and return the convolutional encoder"""
     input_img = Input(shape=(28,28,1))
 
 
@@ -58,12 +70,14 @@ def build_conv_encoder():
     return encoder
 
 def bottleneck(input_encoded):
+    """build and return the bottleneck in a convolutional autoencoder"""
 
     bottle_neck = Conv2D(34,(3,3),activation='relu',padding='same')(input_encoded)
 
     return bottle_neck
 
 def build_conv_decoder():
+    """build and return the conv decoder linked with the bottleneck and the encoder"""
 
     input_img = Input(shape=(28,28,1))
     encoder = build_conv_encoder()
@@ -80,5 +94,12 @@ def build_conv_decoder():
     return decoder
 
 def build_conv_autoencoder():
+        """build a deep convolutional autoencoder
+
+    Args:
+
+    Returns:
+        conv_autoencoder (keras functional model): the convolutional autoencoder built linking conv. decoder and conv. encoder
+    """
     conv_autoencoder = build_conv_decoder()
     return conv_autoencoder
