@@ -1,7 +1,3 @@
-
-import sys
-sys.path.append('../data/')
-from Loader import load_mnist
 import numpy as np
 
 
