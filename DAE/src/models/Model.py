@@ -11,29 +11,26 @@ from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
 import numpy as np
 from tensorflow.keras.layers import Conv2D,Conv2DTranspose, MaxPooling2D
+from tensorflow.keras import regularizers
 
 
-X = load_mnist(download = True,as_img = False)
-
-X_norm = normalize(X)
-X_noise = add_white_noise(X_norm)
-X_train, X_test, Y_train, Y_test = train_test_split(X_noise,X_norm,test_size = 0.2)
-
-
-def build_encoder(encoding_dim):
+def build_encoder(encoding_dim,sparse):
 
     input_img = Input(shape=(28*28,))
     encoded = Dense(128, activation='relu')(input_img)
     encoded = Dense(64, activation='relu')(encoded)
-    encoded = Dense(encoding_dim, activation='relu')(encoded)
+    if sparse:
+        encoded = Dense(encoding_dim, activation='relu',activity_regularizer=regularizers.l1(10e-5))(encoded)
+    else:
+        encoded = Dense(encoding_dim, activation='relu',activity_regularizer=regularizers.l1(10e-5))(encoded)
 
     encoder = Model(input_img,encoded)
     return encoder
 
-def build_decoder(encoding_dim):
+def build_decoder(encoding_dim,sparse):
 
     input_img = Input(shape=(28*28,))
-    encoder = build_encoder(encoding_dim)
+    encoder = build_encoder(encoding_dim,sparse)
     input_encoded = encoder(input_img)
 
     decoded = Dense(64, activation='relu')(input_encoded)
@@ -43,35 +40,10 @@ def build_decoder(encoding_dim):
     decoder = Model(input_img,decoded)
     return decoder
 
-def build_autoencoder(encoding_dim=32):
-    decoder = build_decoder(encoding_dim)
+def build_autoencoder(encoding_dim=32,sparse = False):
+    decoder = build_decoder(encoding_dim,sparse)
     return decoder
 
-
-autoencoder = build_autoencoder()
-
-from tensorflow.keras.callbacks import EarlyStopping
-early_stopping = EarlyStopping(monitor="val_loss",min_delta=0.0001,patience=5,restore_best_weights=True)
-# This model maps an input to its reconstruction
-
-autoencoder.compile(optimizer = 'adam',loss = 'mse',metrics=['mae'])
-
-
-autoencoder.fit(X_train,Y_train,epochs=30,batch_size=64,shuffle=True,validation_data=(X_test,Y_test),callbacks=[early_stopping])
-
-plt.imshow(np.reshape(autoencoder.predict(X_test[0][np.newaxis,:]),(28,28)))
-
-
-plt.imshow(np.reshape(Y_test[0],(28,28)))
-
-#%%
-X = load_mnist(download = True,as_img = True)
-X.shape
-X_norm = normalize(X)
-X_noise = add_white_noise(X_norm)
-X_train, X_test, Y_train, Y_test = train_test_split(X_noise,X_norm,test_size = 0.2)
-
-from tensorflow.keras.layers import Conv2D,Conv2DTranspose, MaxPooling2D
 
 def build_conv_encoder():
     input_img = Input(shape=(28,28,1))
@@ -110,14 +82,3 @@ def build_conv_decoder():
 def build_conv_autoencoder():
     conv_autoencoder = build_conv_decoder()
     return conv_autoencoder
-
-
-conv_autoencoder = build_conv_autoencoder()
-conv_autoencoder.compile(optimizer='adam',loss = 'binary_crossentropy')
-conv_autoencoder.summary()
-conv_autoencoder.fit(X_train,Y_train,batch_size = 256,shuffle=True,epochs=10,validation_data=(X_test,Y_test),callbacks=[early_stopping])
-
-plt.imshow(np.reshape(conv_autoencoder.predict(X_test[3][np.newaxis,:]),(28,28)))
-
-
-plt.imshow(np.reshape(Y_test[3],(28,28)))
